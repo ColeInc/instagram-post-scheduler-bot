@@ -1,2 +1,4 @@
 # instagram-post-scheduler-bot
-This bot is created to automatically post scheduled media to Instagram at a specified time. Written in node.js, accompanied by HTML and CSS, and hosted on GitHub, download this bad boy, and you're set on your way to getting shadowbanned in no time!
+This bot is created to complete numerous tasks automatically for me on Instagram. Namely, automatically post scheduled media to Instagram at a specified time, and unfollow followers who don’t follow me back. Written in Python, utilizing the Selenium library.
+
+Hoping to eventually link up to a Flutter UI.
