@@ -1,0 +1,13 @@
+{
+    "following": [
+        {
+            "date": "2020-06-28 20:42:22",
+            "total": 3,
+            "following": [
+                "cat",
+                "dog",
+                "mouse"
+            ]
+        }
+    ]
+}
