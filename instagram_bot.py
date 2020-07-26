@@ -235,13 +235,13 @@ class instagram_bot:
 
 
     def get_user_followers_count(self):
-        #will be useful inside the get_followers_list/get_following_list function
         pass
+        #will be useful inside the get_followers_list/get_following_list function
 
 
     def get_user_following_count(self):
-        #will be useful inside the get_followers_list/get_following_list function
         pass
+        #will be useful inside the get_followers_list/get_following_list function
 
 
     def like_post(self):
@@ -254,14 +254,14 @@ class instagram_bot:
 
 
     def like_and_follow_on_hashtag(self):
-        #some random number of likes and random number of follows on a certain hashtag to gain growth/engagement (random so that no bot like actions identified)
         pass
+        #some random number of likes and random number of follows on a certain hashtag to gain growth/engagement (random so that no bot like actions identified)
 
 
     def check_user_follower_following_ratio(self):
+        pass
         #checks if a user has more followers than following (don't follow them if they have larger following...)
         #this is a nice to have, pretty easy to implement with existing functions, for later development.
-        pass
 
 
     def close_driver(self):
