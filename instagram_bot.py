@@ -1,6 +1,3 @@
-#delete:
-from explicit import waiter, XPATH
-
 import os
 import re
 import json
@@ -9,6 +6,7 @@ import datetime
 import itertools
 from time import sleep
 from selenium import webdriver
+# from explicit import waiter, XPATH
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -17,6 +15,10 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 class instagram_bot:
 
+    # ---------------------------
+    # Windows:
+    # ---------------------------
+
     def __init__(self):
         self.username = ''
         self.password = ''
@@ -24,30 +26,53 @@ class instagram_bot:
         self.fetch_credentials()
         self.login()
 
+    # ---------------------------
+    # Headless Ubuntu:
+    # ---------------------------
+    
+    # def __init__(self):
+    #     self.username = ''
+    #     self.password = ''
+    #     chrome_options = Options()
+    #     chrome_options.add_argument("--headless")
+    #     chrome_options.add_argument('--no-sandbox')
+    #     print("Starting instagram_bot in headless chrome...")
+    #     # chrome_options.add_argument("window-size=3840,2160")
+    #     self.driver = webdriver.Chrome('/usr/bin/chromedriver', options=chrome_options)
+    #     self.fetch_credentials()
+    #     self.login()
+
 
     def fetch_credentials(self):
+        print("Fetching credentials from file...")
         with open('../credentials.json', 'r') as data:
             credentials = json.load(data)
         for i in credentials:
             self.username = i["username"]
             self.password = i["password"]
+        print("Successfully fetched.")
 
 
     def login(self):
+        print("Logging in...")
         self.driver.get('https://www.instagram.com/accounts/login')
-        sleep(1)
+        sleep(2.32)
         self.driver.find_element_by_name('username').send_keys(self.username)
         self.driver.find_element_by_name('password').send_keys(self.password, Keys.RETURN)
+        print('Logged in to user @{}!'.format(self.username))
         sleep(self.rng())
 
 
     def rng(self):
-        num = random.randint(3200,8200) / 1000
+        num = random.randint(3264,9213) / 1000
         return num
 
 
     def go_to_user(self, username):
+        print("Going to user --> @{}".format(username))
         self.driver.get('https://www.instagram.com/{}'.format(username))
+        sleep(self.rng())
+        print("Loaded @{}'s Page.".format(username))
 
 
     def follow_user(self, username):
@@ -62,12 +87,12 @@ class instagram_bot:
         self.go_to_user(username)
         sleep(self.rng())
         try:
-            print("Unfollowing {}...").format(username)
-            following_button = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/header/section/div[1]/div[2]/span/span[1]/button').click()
+            print("Unfollowing {}...".format(username))
+            following_button = self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/div[1]/div[2]/div/span/span[1]/button').click()
             sleep(2)
             following_button = self.driver.find_element_by_xpath("//button[contains(text(), 'Unfollow')]").click()
             # sleep(self.rng())
-            print("Unfollowed {}.").format(username)
+            print("Unfollowed {}!".format(username))
         except NoSuchElementException:
             print("You are not following that user!")
 
@@ -181,16 +206,16 @@ class instagram_bot:
         real_amount = self.get_num_followers(username)
 
         try:
-            user_id = self.browser.execute_script("return window.__additionalData[Object.keys(window.__additionalData)[0]].data.graphql.user.id")
+            user_id = self.driver.execute_script("return window.__additionalData[Object.keys(window.__additionalData)[0]].data.graphql.user.id")
         except:
-            user_id = self.browser.execute_script("return window._sharedData." "entry_data.ProfilePage[0]." "graphql.user.id")
+            user_id = self.driver.execute_script("return window._sharedData." "entry_data.ProfilePage[0]." "graphql.user.id")
 
-        self.browser.get("https://www.instagram.com/static/bundles/es6/Consumer.js/1f67555edbd3.js")
-        page_source = self.browser.page_source
+        self.driver.get("https://www.instagram.com/static/bundles/es6/Consumer.js/1f67555edbd3.js")
+        page_source = self.driver.page_source
         hash = re.findall('[a-z0-9]{32}(?=",n=")', page_source) # fetch 32 char followers hash
         
         if hash:
-            query_hash = hash[0] # http://prntscr.com/trrreu            
+            query_hash = hash[0] # http://prntscr.com/trrreu          
         elif hash == False or hash[0] is None:
             print("Unable to calculate query hash for API call.")
 
@@ -207,7 +232,7 @@ class instagram_bot:
         self.driver.get(url)
         sleep(self.rng())
 
-        pre = self.browser.find_element_by_xpath("//td[@class='line-content']")
+        pre = self.driver.find_element_by_xpath("//td[@class='line-content']")
         data = json.loads(pre.text)
         followers_page = data["data"]["user"]["edge_followed_by"]["edges"]
         followers_list = []
@@ -233,10 +258,10 @@ class instagram_bot:
             }
             url = "{}&variables={}".format(graphql_query_URL, str(json.dumps(variables)))
 
-            self.browser.get(url)
+            self.driver.get(url)
             sleep(self.rng())
 
-            pre = self.browser.find_element_by_xpath("//td[@class='line-content']")
+            pre = self.driver.find_element_by_xpath("//td[@class='line-content']")
             data = json.loads(pre.text)
 
             followers_page = data["data"]["user"]["edge_followed_by"]["edges"]
@@ -332,11 +357,14 @@ class instagram_bot:
         print('Final following_list: ', following_list, "\nNum following counted: ", len(following_list), sep='')
         print("Successfully fetched following list!")
         return following_list
-
-
+        
+        
     def get_latest_followers_list_from_file(self, username):
+        # Add a parameter that defines the maximum number of days old a value for the specified user is allowed to be, if found inside the corresponding .json file. E.g. nothing older than 3 days
+
+        print("Getting latest followers list from followers.json...")
         dates_list = []
-        if os.path.isfile('../followers.json'):    #if the file exists, append. Otherwise create new file
+        if os.path.isfile('../followers.json'):
             with open('../followers.json') as file:
                 data = json.load(file)
                 index = 0
@@ -356,13 +384,16 @@ class instagram_bot:
                 else:
                     # this is where you'd call get_followers_list but i won't do that for now.
                     print("No existing followers list was found for user @", username, sep='')
+                    return None
         else:
             print("followers.json not found!")
+            return None
 
 
     def get_latest_following_list_from_file(self, username):
+        print("Getting latest following list from following.json...")
         dates_list = []
-        if os.path.isfile('../following.json'):    #if the file exists, append. Otherwise create new file
+        if os.path.isfile('../following.json'):
             with open('../following.json') as file:
                 data = json.load(file)
                 index = 0
@@ -382,13 +413,16 @@ class instagram_bot:
                 else:
                     # this is where you'd call get_following_list but i won't do that for now.
                     print("No existing following list was found for user @", username, sep='')
+                    return None
         else:
             print("following.json not found!")
+            return None
 
     
     def get_latest_unfollowers_list_from_file(self, username):
+        print("Getting latest unfollowers list from unfollowers.json...")
         dates_list = []
-        if os.path.isfile('../unfollowers.json'):    # If the file exists, append. Otherwise create new file
+        if os.path.isfile('../unfollowers.json'):
             with open('../unfollowers.json') as file:
                 data = json.load(file)
                 index = 0
@@ -407,8 +441,10 @@ class instagram_bot:
                     return data['unfollowers'][sorted_list[0][0]]['unfollowers']
                 else:
                     print("No existing following list was found for user @", username, sep='')
+                    return None
         else:
             print("unfollowers.json not found!")
+            return None
 
 
     def get_unfollowers_list(self, followers_list, following_list):
@@ -423,13 +459,28 @@ class instagram_bot:
 
 
     def unfollow_unfollowers(self, unfollowers_list, limit=10):
-        test = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
-        remaining_unfollowers = test[limit:] # should be 11-16
-        print("\nremaining_followers: \n", remaining_unfollowers)
+        print("Unfollowing {} users from your unfollow list...".format(limit))
 
-        for user in unfollowers_list:
-            self.unfollow_user(user)
-            sleep(self.rng())
+        # test = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+        # remaining_unfollowers = test[limit:] # should be 11-16
+        # print("\nremaining_followers: \n", remaining_unfollowers)
+
+        try:
+            i = 0
+            for user in unfollowers_list:
+                if i == limit:
+                    break
+                self.unfollow_user(user)
+                sleep(self.rng())
+                i += 1
+            
+            remaining_unfollowers = unfollowers_list[i:]
+            # writing the updated unfollowers list back to unfollowers.json.
+            print("\nNumber of remaining unfollowers: ", len(remaining_unfollowers))
+            self.write_list_to_file(self.username, remaining_unfollowers, "unfollowers")
+
+        except Exception as e:
+            print('Error while unfollowing unfollowers:\n', e, sep='')
 
 
     def write_list_to_file(self, username, list_data, filename):
@@ -479,7 +530,6 @@ class instagram_bot:
     def get_num_followers(self, username):
         self.go_to_user(username)
         # sleep(self.rng())
-        sleep(2.1)
         followers = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/header/section/ul/li[2]/a/span').text.replace(',', '')
         print(username, "'s Total Followers: ", followers, sep='')
         return int(followers)
@@ -488,7 +538,6 @@ class instagram_bot:
     def get_num_following(self, username):
         self.go_to_user(username)
         # sleep(self.rng())
-        sleep(2.1)
         following = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/header/section/ul/li[3]/a/span').text.replace(',', '')
         print(username, "'s Total Following: ", following, sep='')
         return int(following)
@@ -528,41 +577,43 @@ class instagram_bot:
         self.driver.quit()
 
 
-# username = 'cole_mcconnell'
-# username = 'BillionaireCole'
-username = 'xylotheous'
+# # username = 'cole_mcconnell'
+# # username = 'BillionaireCole'
+# username = 'xylotheous'
 
-bot = instagram_bot()
-# bot.write_list_to_file(username, bot.get_following_list_v2(username), "following")
-# bot.write_list_to_file(username, bot.get_followers_list_v2(username), "followers")
-# bot.get_followers_list(username)
-# bot.get_following_list(username)
+# bot = instagram_bot()
+# # bot.write_list_to_file(username, bot.get_following_list_v2(username), "following")
+# # bot.write_list_to_file(username, bot.get_followers_list_v2(username), "followers")
+# # bot.get_followers_list(username)
+# # bot.get_following_list(username)
 
-followers = bot.get_latest_followers_list_from_file(username)
-following = bot.get_latest_following_list_from_file(username)
-unfollowers = bot.get_unfollowers_list(followers, following)
-bot.write_list_to_file(username, unfollowers, "unfollowers")
-# bot.unfollow_unfollowers(unfollowers, 10)
+# # followers = bot.get_latest_followers_list_from_file(username)
+# # following = bot.get_latest_following_list_from_file(username)
+# # unfollowers = bot.get_unfollowers_list(followers, following)
+# # bot.write_list_to_file(username, unfollowers, "unfollowers")
+# # bot.unfollow_unfollowers(unfollowers, 10)
 
-# unfollowers = bot.get_latest_unfollowers_list_from_file(username)
-# unfollowers = [1,2,3,4,5,6,7,8,9,10,11,12]
-# bot.unfollow_unfollowers(unfollowers, 10)
+# # unfollowers = bot.get_latest_unfollowers_list_from_file(username)
+# # bot.unfollow_unfollowers(unfollowers, 40)
 
-# bot.get_followers_list_v2(username)
-# bot.get_following_list_v2(username)
+# # bot.get_followers_list_v2(username)
+# # bot.get_following_list_v2(username)
 
-bot.close_driver()
+# bot.close_driver()
 
-#------------------
+#-----------------------------
 # DO DO LIST:
-#------------------
+#-----------------------------
 
 """
-Then need to make some kind of list updater somehow? E.g. if we have a list of 100 ppl to unfollow and set it to iterate 20 of them and unfollow them, then pass back to the write unfollowers.json file the remaining 80 ppl in that list we didn't iterate, so it knows which ones we haven't unfollowed yet + more efficient than going back and fetching all unfollowers each time.
+- Then need to make some kind of list updater somehow? E.g. if we have a list of 100 ppl to unfollow and set it to iterate 20 of them and unfollow them, then pass back to the write unfollowers.json file the remaining 80 ppl in that list we didn't iterate, so it knows which ones we haven't unfollowed yet + more efficient than going back and fetching all unfollowers each time.
 
-merge all get_latest_followers/following/unfollowers_list_from_file functions into single function with new parameter to distinguish which to run
+- merge all get_latest_followers/following/unfollowers_list_from_file functions into single function with new parameter to distinguish which to run
 
-Implement a "Starting so and so function" statement in each major function
+- Implement a "Starting so and so function" statement in each major function
 
-Make a UI that enables us to 1 click choose which of these particular commands we want to execute. Flutter or Angular... react?
+- Make a UI that enables us to 1 click choose which of these particular commands we want to execute. Flutter or Angular... react?
+
+- 
+
 """
