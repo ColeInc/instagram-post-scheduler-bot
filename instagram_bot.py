@@ -9,6 +9,7 @@ from selenium import webdriver
 # from explicit import waiter, XPATH
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
@@ -22,47 +23,88 @@ class instagram_bot:
     def __init__(self):
         self.username = ''
         self.password = ''
-        self.driver = webdriver.Chrome('C:/Windows/chromedriver')
-        self.fetch_credentials()
-        self.login()
+        self.driver = webdriver.Chrome('C:/Windows/chromedriver') # Alter this to the location of your local chromedriver file
+        print("Starting instagram_bot in Windows via chromedriver...")
+        # self.login()
+        print("Waiting for login from user...")
 
     # ---------------------------
     # Headless Ubuntu:
     # ---------------------------
     
-    # def __init__(self):
-    #     self.username = ''
-    #     self.password = ''
+    # def __init__(self, username: str = None, password: str = None):
+    #     self.username = username
+    #     self.password = password
     #     chrome_options = Options()
     #     chrome_options.add_argument("--headless")
     #     chrome_options.add_argument('--no-sandbox')
-    #     print("Starting instagram_bot in headless chrome...")
-    #     # chrome_options.add_argument("window-size=3840,2160")
+    #     print("Starting instagram_bot in Ubuntu 20.04 via headless chrome...")
     #     self.driver = webdriver.Chrome('/usr/bin/chromedriver', options=chrome_options)
-    #     self.fetch_credentials()
+    # #     self.fetch_credentials()
     #     self.login()
-
-
-    def fetch_credentials(self):
-        print("Fetching credentials from file...")
-        with open('../credentials.json', 'r') as data:
-            credentials = json.load(data)
-        for i in credentials:
-            self.username = i["username"]
-            self.password = i["password"]
-        print("Successfully fetched.")
+    #     print("Waiting for login from user...")
 
 
     def login(self):
-        print("Logging in...")
-        self.driver.get('https://www.instagram.com/accounts/login')
-        sleep(2.32)
-        self.driver.find_element_by_name('username').send_keys(self.username)
-        self.driver.find_element_by_name('password').send_keys(self.password, Keys.RETURN)
-        print('Logged in to user @{}!'.format(self.username))
+        try:
+            print("Logging in...")
+            self.driver.get('https://www.instagram.com/accounts/login')
+            sleep(2.47)
+            self.driver.find_element_by_name('username').send_keys(self.username)
+            self.driver.find_element_by_name('password').send_keys(self.password, Keys.RETURN)
+            sleep(self.rng())
+            return self.check_suspicious_login_attempt()   
+
+        except Exception as e:
+            print('Error logging in:\n', e, sep='')
+            return 1, 'Error logging in:\n' + str(e)
+
+
+    def check_suspicious_login_attempt(self):
+        if self.check_user_logged_in():
+            print('Logged in to user @{}!'.format(self.username))
+            return 0, 'Logged in to user @' + self.username + '!'
+        else:
+            try:
+                self.driver.find_elements_by_xpath("//*[contains(text(), 'Suspicious Login Attempt')]")
+                print("Suspicious Login Attempt identified!")
+                user_email = self.driver.find_element_by_xpath("//label[@class='UuB0U Uwdwc']").text
+
+                print("Failed to login, security code was sent to {}.".format(user_email))
+
+                # from this point onwards, only way for this user to login is to continue in enter_security_code function via API call below.
+
+                # This is where i'd create a separate function to login to gmail somehow and use gmail API to fetch security code from email.. but would only work for gmail users :/
+
+                self.driver.find_element_by_xpath("//button[contains(text(), 'Send Security Code')]").click() # clicks on "Send Security Code" button
+                print("Waiting on user to provide security code...")
+                return 2, "Suspicious Login Attempt identified!\nFailed to login, security code was sent to " + user_email
+
+            except Exception as e:
+                print("An error occurred while logging in. Please revise login credentials.")
+                return 3, "An error occurred while logging in. Please revise login credentials."
+
+        
+    def check_user_logged_in(self):
+        try:
+            self.driver.find_element_by_xpath("//img[@class='_6q-tv']").text
+            return True
+        except Exception as e:
+            print("An error occurred while logging in.")
+            return False
+
+
+    def enter_security_code(self, security_code):
+        print("Entering security code received from user...")
+        self.driver.find_element_by_name('security_code').send_keys(security_code, Keys.RETURN)
         sleep(self.rng())
-
-
+        if self.check_user_logged_in():
+            print("Successfully logged in with security code!")
+            return (0, "Successfully logged in with security code!")
+        else:
+            return(1, "An error occurred while trying to login with provided security code.")
+        
+        
     def rng(self):
         num = random.randint(3264,9213) / 1000
         return num
@@ -606,13 +648,8 @@ class instagram_bot:
 #-----------------------------
 
 """
-- Then need to make some kind of list updater somehow? E.g. if we have a list of 100 ppl to unfollow and set it to iterate 20 of them and unfollow them, then pass back to the write unfollowers.json file the remaining 80 ppl in that list we didn't iterate, so it knows which ones we haven't unfollowed yet + more efficient than going back and fetching all unfollowers each time.
 
-- merge all get_latest_followers/following/unfollowers_list_from_file functions into single function with new parameter to distinguish which to run
-
-- Implement a "Starting so and so function" statement in each major function
-
-- Make a UI that enables us to 1 click choose which of these particular commands we want to execute. Flutter or Angular... react?
+- Merge all get_latest_followers/following/unfollowers_list_from_file functions into single function with new parameter to distinguish which to run
 
 - 
 
