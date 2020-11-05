@@ -1,15 +1,17 @@
 import os
 import re
 import json
+import emojis
 import random
 import datetime
 import itertools
+import mysql.connector
 from time import sleep
 from selenium import webdriver
-# from explicit import waiter, XPATH
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver import Firefox, FirefoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
@@ -23,9 +25,12 @@ class instagram_bot:
     def __init__(self):
         self.username = ''
         self.password = ''
-        self.driver = webdriver.Chrome('C:/Windows/chromedriver') # Alter this to the location of your local chromedriver file
-        print("Starting instagram_bot in Windows via chromedriver...")
-        # self.login()
+        self.mysql = ''
+        self.driver = ''
+        # self.driver = webdriver.Chrome('C:/Windows/chromedriver') # Alter this to the location of your local chromedriver file
+        # print("Starting instagram_bot in Windows via chromedriver...")
+        # self.driver = webdriver.Firefox()
+        print("Starting instagram_bot in Windows via geckodriver...")
         print("Waiting for login from user...")
 
     # ---------------------------
@@ -33,31 +38,77 @@ class instagram_bot:
     # ---------------------------
     
     # def __init__(self, username: str = None, password: str = None):
-    #     self.username = username
-    #     self.password = password
-    #     chrome_options = Options()
-    #     chrome_options.add_argument("--headless")
-    #     chrome_options.add_argument('--no-sandbox')
-    #     print("Starting instagram_bot in Ubuntu 20.04 via headless chrome...")
-    #     self.driver = webdriver.Chrome('/usr/bin/chromedriver', options=chrome_options)
-    # #     self.fetch_credentials()
-    #     self.login()
-    #     print("Waiting for login from user...")
+        # self.username = ''
+        # self.password = ''
+        # self.mysql = ''
+        # # chrome_options = Options()
+        # # chrome_options.add_argument("--headless")
+        # # chrome_options.add_argument('--no-sandbox')
+        # # print("Starting instagram_bot in Ubuntu 20.04 via headless chrome...")
+        # # self.driver = webdriver.Chrome('/usr/bin/chromedriver', options=chrome_options)
+        
+        # ff_options = FirefoxOptions()
+        # ff_options.headless = True
+        # self.driver = webdriver.Firefox(executable_path='./geckodriver', options=ff_options)
+        # print("Starting instagram_bot in Ubuntu 20.04 via geckodriver...")
+        # # self.fetch_credentials()
+        # # self.login()
+        # print("Waiting for login from user...")
 
 
     def login(self):
         try:
             print("Logging in...")
-            self.driver.get('https://www.instagram.com/accounts/login')
+            self.driver = webdriver.Firefox()
             sleep(2.47)
+            self.driver.get('https://www.instagram.com/accounts/login')
+            sleep(self.rng())
             self.driver.find_element_by_name('username').send_keys(self.username)
             self.driver.find_element_by_name('password').send_keys(self.password, Keys.RETURN)
             sleep(self.rng())
             return self.check_suspicious_login_attempt()   
 
         except Exception as e:
-            print('Error logging in:\n', e, sep='')
-            return 1, 'Error logging in:\n' + str(e)
+            try:
+                print('Error logging in:\n', e, sep='')
+                self.driver.quit()
+                return 1, 'Error logging in:\n' + str(e)
+            except:
+                print('Error logging in:\n', e, sep='')
+                return 1, 'Error logging in:\n' + str(e)
+
+
+    def connect_to_mysql(self):
+        print("Connecting to MySQL Database...")
+
+        with open('../mysql_credentials.json', 'r') as data:
+            credentials = json.load(data)
+        for i in credentials:
+            host = i["host"]
+            username = i["username"]
+            password = i["password"]
+
+        try:
+            mydb = mysql.connector.connect(
+                host=host,
+                user=username,
+                password=password,
+                database='instagram_bot'
+            )
+            self.mysql = mydb
+            self.cursor = mydb.cursor()
+
+            print("Connected to database!")
+            return True
+
+        except Exception as e:
+            print("Error while connecting to MySQL db:\n", e)
+
+
+    def close_database_connection(self):
+        self.cursor.close()
+        self.mysql.close()
+        print("Successfully closed MySQL Database connection.")
 
 
     def check_suspicious_login_attempt(self):
@@ -106,7 +157,8 @@ class instagram_bot:
         
         
     def rng(self):
-        num = random.randint(3264,9213) / 1000
+        num = random.randint(3600,8200) / 1000
+        # num = random.randint(6269,10213) / 1000
         return num
 
 
@@ -125,18 +177,70 @@ class instagram_bot:
         sleep(self.rng())
 
 
-    def unfollow_user(self, username):
+    # def unfollow_user(self, username):
+    #     self.go_to_user(username)
+    #     try:
+    #         print("Unfollowing {}...".format(username))
+    #         # following_button = self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/div[1]/div[2]/div/span/span[1]/button').click()
+    #         self.driver.find_element_by_xpath("//button[@class='_5f5mN    -fzfL     _6VtSN     yZn4P   ']").click()
+    #         sleep(1)
+    #         # self.driver.find_element_by_xpath("//button[contains(text(), 'Unfollow')]").click()
+    #         self.driver.find_element_by_xpath("//button[@class='aOOlW -Cab_   ']").click()
+    #         # sleep(self.rng())
+    #         print("Unfollowed {}!".format(username))
+    #         return 0, "Unfollowed successfully."
+    #     except NoSuchElementException:
+    #         print("You are not following that user!")
+    #         return 0, "You are not following that user!"
+    #     except:
+    #         html = self.driver.page_source
+    #         self.write_to_file(html, 'html')
+    #         if self.check_for_try_again_later_notice():
+    #             return 1, "Identified maximum like/follow actions restriction! Please wait a while before trying again."
+
+
+    def unfollow_user_v2(self, username):
         self.go_to_user(username)
-        sleep(self.rng())
-        try:
-            print("Unfollowing {}...".format(username))
-            following_button = self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/div[1]/div[2]/div/span/span[1]/button').click()
-            sleep(2)
-            following_button = self.driver.find_element_by_xpath("//button[contains(text(), 'Unfollow')]").click()
-            # sleep(self.rng())
+        print("Unfollowing {}...".format(username))
+
+        try: # try unfollow them first, most efficient. if it fails, then we check if we're already following them, etc.
+            follow_button = WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((By.XPATH, "//button[@class='_5f5mN    -fzfL     _6VtSN     yZn4P   ']"))) # UNFOLLOW CLASS
+            follow_button.click()
+            sleep(1.57)
+            WebDriverWait(self.driver, 10).until(EC.visibility_of_element_located((By.XPATH, "//button[@class='aOOlW -Cab_   ']"))).click()
             print("Unfollowed {}!".format(username))
-        except NoSuchElementException:
-            print("You are not following that user!")
+            return 0, "Unfollowed successfully."
+
+        except Exception as e:
+            try:
+                WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((By.XPATH, "//button[@class='sqdOP  L3NKy    _8A5w5    ']"))).click() # UNFOLLOW CLASS on some different users? maybe private acc?
+                sleep(1.57)
+                WebDriverWait(self.driver, 10).until(EC.visibility_of_element_located((By.XPATH, "//button[@class='aOOlW -Cab_   ']"))).click()
+                print("Unfollowed {}!".format(username))
+                return 0, "Unfollowed successfully."
+
+            except Exception as e:
+                try:
+                    follow_button = WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((By.XPATH, "//button[@class='_5f5mN       jIbKX  _6VtSN     yZn4P   ']"))) # FOLLOW CLASS 
+                except:
+                    try:
+                        follow_button = WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((By.XPATH, "//button[@class='sqdOP  L3NKy   y3zKF     ']"))) # FOLLOW CLASS of private page.
+                    except Exception as e:
+                        print(e)
+                        html = self.driver.page_source
+                        self.write_to_file(html, 'html')
+                        if self.check_for_try_again_later_notice():
+                            return 1, "Identified maximum like/follow actions restriction! Please wait a while before trying again."
+
+                if follow_button.text == "Follow":
+                    print("You are not following that user!")
+                    return 0, "You are not following that user!"
+                else:
+                    print(e)
+                    html = self.driver.page_source
+                    self.write_to_file(html, 'html')
+                    if self.check_for_try_again_later_notice():
+                        return 1, "Identified maximum like/follow actions restriction! Please wait a while before trying again."
 
 
     def go_to_followers_list(self, username):
@@ -192,7 +296,7 @@ class instagram_bot:
             for group in itertools.count(start=1, step=12):
                 for follower_index in range(group, group + 12):
                     nth_child = "ul div li:nth-child(" + str(follower_index) + ") a.notranslate"
-                    follower = WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.CSS_SELECTOR, nth_child))).text
+                    follower = WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.CSS_SELECTOR, nth_child))).text # can alter this 3 seconds to be more/less if followers aren't loading fast enough, or waiting too long each time.
                     print(follower_index, ") ", follower, sep='')
                     following_list.append(follower) if following else followers_list.append(follower)
 
@@ -241,7 +345,7 @@ class instagram_bot:
     
         """
         v2 of this function utlizes an unofficial instagram API call to fetch the list of followers/following. I've been told it theoretically isn't
-        illegal so be careful where you use this lads.
+        legal bc we're using instagram's APIs without official permission so be careful where you use this lads.
         Only difference between followers and following v2 functions is the hash used inside the URL. Different hash for followers/following.
         """
 
@@ -274,7 +378,8 @@ class instagram_bot:
         self.driver.get(url)
         sleep(self.rng())
 
-        pre = self.driver.find_element_by_xpath("//td[@class='line-content']")
+        # pre = self.driver.find_element_by_xpath("//td[@class='line-content']") # looks like this only works when in chromedriver (definitely not working in firefox!)
+        pre = self.driver.find_element_by_xpath("//body/pre") # works in firefox
         data = json.loads(pre.text)
         followers_page = data["data"]["user"]["edge_followed_by"]["edges"]
         followers_list = []
@@ -303,7 +408,8 @@ class instagram_bot:
             self.driver.get(url)
             sleep(self.rng())
 
-            pre = self.driver.find_element_by_xpath("//td[@class='line-content']")
+            # pre = self.driver.find_element_by_xpath("//td[@class='line-content']") # looks like this only works when in chromedriver (definitely not working in firefox!)
+            pre = self.driver.find_element_by_xpath("//body/pre") # works in firefox
             data = json.loads(pre.text)
 
             followers_page = data["data"]["user"]["edge_followed_by"]["edges"]
@@ -356,7 +462,8 @@ class instagram_bot:
         self.driver.get(url)
         sleep(self.rng())
 
-        pre = self.driver.find_element_by_xpath("//td[@class='line-content']")
+        # pre = self.driver.find_element_by_xpath("//td[@class='line-content']") # looks like this only works when in chromedriver (definitely not working in firefox!)
+        pre = self.driver.find_element_by_xpath("//body/pre") # works in firefox
         data = json.loads(pre.text)
         following_page = data["data"]["user"]["edge_follow"]["edges"]
         following_list = []
@@ -370,7 +477,7 @@ class instagram_bot:
         has_next_page = data["data"]["user"]["edge_follow"]["page_info"]["has_next_page"]
 
         while has_next_page:
-            sleep(self.rng())
+            sleep(self.rng()-1.52) # maybe decrease or increase this...
             end_cursor = data["data"]["user"]["edge_follow"]["page_info"]["end_cursor"] # get next page reference
 
             variables = {
@@ -385,7 +492,8 @@ class instagram_bot:
             self.driver.get(url)
             sleep(self.rng())
 
-            pre = self.driver.find_element_by_xpath("//td[@class='line-content']")
+            # pre = self.driver.find_element_by_xpath("//td[@class='line-content']") # looks like this only works when in chromedriver (definitely not working in firefox!)
+            pre = self.driver.find_element_by_xpath("//body/pre") # works in firefox
             data = json.loads(pre.text)
 
             followers_page = data["data"]["user"]["edge_follow"]["edges"]
@@ -502,26 +610,25 @@ class instagram_bot:
 
     def unfollow_unfollowers(self, unfollowers_list, limit=10):
         print("Unfollowing {} users from your unfollow list...".format(limit))
-
-        # test = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
-        # remaining_unfollowers = test[limit:] # should be 11-16
-        # print("\nremaining_followers: \n", remaining_unfollowers)
-
         try:
             i = 0
             for user in unfollowers_list:
                 if i == limit:
                     break
-                self.unfollow_user(user)
+                print("[", i+1, " of ", limit, "]: ", sep="")
+                resp = self.unfollow_user_v2(user)
+                if resp[0] > 0:
+                    break
                 sleep(self.rng())
                 i += 1
-            
+
             remaining_unfollowers = unfollowers_list[i:]
-            # writing the updated unfollowers list back to unfollowers.json.
             print("\nNumber of remaining unfollowers: ", len(remaining_unfollowers))
-            self.write_list_to_file(self.username, remaining_unfollowers, "unfollowers")
+            self.write_list_to_file(self.username, remaining_unfollowers, "unfollowers") # writing the updated unfollowers list back to unfollowers.json.
 
         except Exception as e:
+            html = self.driver.page_source
+            self.write_to_file(html, 'html')
             print('Error while unfollowing unfollowers:\n', e, sep='')
 
 
@@ -585,6 +692,234 @@ class instagram_bot:
         return int(following)
 
 
+    def like_and_comment_x_posts_of_hashtag(self, hashtag, number_of_likes=0, number_of_comments=0):
+        print("Liking and commenting on {} recent posts under the #{} hashtag...".format(str(number_of_likes), hashtag))
+        # Takes a hashtag and a number of posts to like, and likes a random x amount of posts from the "most recent" section of that certain hashtag.
+
+        if number_of_comments == 0 and number_of_likes == 0:
+            return 0, "User specified to like and comment on 0 posts. There you go pal, it's done."
+
+        try:
+            hashtag = hashtag.strip("#") # Removes any actual hashtags inputted
+            self.driver.get('https://www.instagram.com/explore/tags/' + hashtag)
+            sleep(self.rng())
+
+            self.driver.find_elements_by_class_name("eLAPa")[9].click() # click on the first post in the Recent Posts section (10th box down, therefore index 9)
+            sleep(2.81)
+                
+            for i in range(max(number_of_likes, number_of_comments)):
+                print("[Post {} out of {}]".format(str(i+1), str(max(number_of_likes, number_of_comments))))
+
+                if i+1 < number_of_likes: # while we haven't hit maximum specified likes, like the post.
+                    self.driver.find_element_by_xpath("//span[@class='fr66n']/button").click() # click the like button on current post
+                    print("Liked!")
+                    sleep(self.rng()-2.51)
+
+                if i+1 < number_of_comments: # while we haven't hit maximum specified comments, comment on the post.
+                    comment = self.fetch_random_comment()
+                    self.driver.find_element_by_class_name('Ypffh').click() # need to click into the comments textbox first
+                    sleep(0.2) # stress test this to decrease as much as possible
+                    self.driver.find_element_by_class_name('Ypffh').send_keys(emojis.encode(comment), Keys.RETURN) # changing any emoji text :heart_eyes: to an emoji here 
+                    print("Commented: {}".format(comment))                                                                     
+                    sleep(self.rng()-1.02)
+
+                self.driver.find_element_by_class_name('coreSpriteRightPaginationArrow').click() # click on the next button to go to next post
+                sleep(self.rng()-1.11)
+
+                if i % 5 == 0: # for every 5 posts press Right Arrow twice to skip a post every once in a while to avoid looking sus when liking many posts.
+                    self.driver.find_element_by_class_name('coreSpriteRightPaginationArrow').click() # click on the next button to go to next post
+                    sleep(self.rng()-1.27)
+            return 0, "Successfully liked " + str(number_of_likes) + " recent posts under the #" + hashtag + " hashtag!"
+
+        except Exception as e:
+            if self.check_for_try_again_later_notice():
+                return 1, "Identified maximum like/follow actions restriction! Please wait a while before trying again."
+            else:
+                print("An error occurred while liking posts under this hashtag (It isn't a 'Try Again Later' error):\n", e)
+                return 2, "An error occurred while liking posts under this hashtag (It isn't a 'Try Again Later' error):\n" + str(e)
+
+
+    def like_and_comment_on_random_hashtag(self, number_of_likes=0, number_of_comments=0):
+        hashtag = self.fetch_random_hashtag()
+        return self.like_and_comment_x_posts_of_hashtag(hashtag, number_of_likes, number_of_comments)
+
+
+    def check_for_try_again_later_notice(self):
+        try:
+            self.driver.find_elements_by_xpath("//*[contains(text(), 'We restrict certain activity to protect our community')]")
+            print("Identified maximum like/follow actions restriction! Please wait a while before trying again.")
+            return True
+        except:
+            print("No 'Try Again Later' notice detected. Looks like you're good kid.")
+            return False
+
+
+    def fetch_random_hashtag(self):
+        print("Fetching list of hashtags from file...")
+        with open('../hashtag_list.json', 'r') as data:
+            hashtag_list = json.load(data)
+        index = random.randint(0,len(hashtag_list['hashtags'])-1)
+        hashtag = hashtag_list['hashtags'][index]
+        print("Random Hashtag --> #", hashtag, sep="")
+        return hashtag
+
+
+    def fetch_random_comment(self):
+        print("Fetching list of comments from file...")
+        with open('../comment_list.json', 'r', encoding="utf8") as data:
+            comment_data = json.load(data)
+        index = random.randint(0,len(comment_data['comments'])-1)
+        comment = comment_data['comments'][index]
+        # current_index = comment_data['comments'][0]['current_index']
+        # comment_list = comment_data['comments'][0]['comments']
+        # print("Random Comment --> ", comment, sep="")
+        return comment
+
+
+    def fetch_id_from_username(self):
+        """
+        Takes the instagram user's username, goes to MySQL database, User table, checks if username already has record and returns UUID, 
+        otherwise creates new table record with auto-generated UUID
+        """
+
+        try:
+            print("Fetching UUID from User table...")
+            # username = 'goose'
+
+            sql = "SELECT * FROM user WHERE username=%s" # gotta use dat %s to prevent SQL injections. Means input has to be a string
+            self.cursor.execute(sql, (self.username,))
+            result = self.cursor.fetchall()
+
+            if len(result) > 0:
+                print("Successfully fetched UUID for {}.".format(self.username))
+                return 0, str(result[0][0])
+            else:
+                print("User {} does not exist in table, creating new record...")
+
+                sql = "INSERT INTO user (username) VALUES (%s)" # inserting new username into User table, which creates new uuid to match
+                self.cursor.execute(sql, (self.username,))
+                self.mysql.commit()
+                print(self.cursor.rowcount, "record(s) inserted.")
+
+                new_id = self.cursor.lastrowid
+                return 0, str(new_id)
+
+        except Exception as e:
+            print('Error fetching UUID from User table:\n', e, sep='')
+            return 1, 'Error fetching UUID from User table:\n' + str(e)
+
+
+    def follow_users_under_hashtag(self, uuid, hashtag, number_of_users=0):
+        print("Following {} users under the recent posts section of the #{} hashtag...".format(str(number_of_users), hashtag))
+
+        if number_of_users == 0:
+            return 0, "User specified to follow 0 people. There you go pal, consider it done."
+
+        new_following_list = []
+
+        try:
+            hashtag = hashtag.strip("#") # Removing any actual hashtag characters inputted
+            self.driver.get('https://www.instagram.com/explore/tags/' + hashtag)
+            sleep(self.rng())
+
+            self.driver.find_elements_by_class_name("eLAPa")[9].click() # click on the first post in the Recent Posts section (10th box down, therefore index 9)
+            sleep(2.81)
+                
+            for i in range(number_of_users):
+                print("[Post {} out of {}]".format(str(i+1), str(number_of_users)))
+
+                follow_button = self.driver.find_element_by_xpath("//div[@class='bY2yH']/button")
+
+                if follow_button.text == 'Follow':
+                    follow_button.click()
+                    current_post_username = self.driver.find_element_by_xpath("//a[@class='sqdOP yWX7d     _8A5w5   ZIAjV ']").text
+                    insert_tuple = (int(uuid), current_post_username)
+                    new_following_list.append(insert_tuple)
+                    print("Followed {}!".format(current_post_username))
+                    sleep(self.rng()-3.03)
+                else:
+                    print("Already following user.")
+
+                self.driver.find_element_by_class_name('coreSpriteRightPaginationArrow').click() # click on the next button to go to next post
+                sleep(self.rng()-1.51)
+
+                if i % 5 == 0: # for every 5 posts press Right Arrow twice to skip a post every once in a while to avoid looking sus when liking many posts.
+                    self.driver.find_element_by_class_name('coreSpriteRightPaginationArrow').click() # click on the next button to go to next post
+                    sleep(self.rng()-1.51)
+
+            print("Final new_following_list: ", new_following_list)
+            return 0, "Successfully followed " + str(number_of_users) + " users under the #" + hashtag + " hashtag!", new_following_list
+
+        except Exception as e:
+            print(e, "\n--------------------------------------")
+            if self.check_for_try_again_later_notice():
+                return 1, "Identified maximum like/follow actions restriction! Please wait a while before trying again."
+            else:
+                print("An error occurred while following users under this hashtag (It isn't a 'Try Again Later' error):\n\n", e)
+                return 2, "An error occurred while following users under this hashtag (It isn't a 'Try Again Later' error):\n" + str(e)
+
+
+    def insert_into_following_table(self, following_list):
+        try:
+            print("Inserting list of users you followed into following table...")
+            sql = """INSERT INTO following (user_id, username, date_followed) VALUES (%s, %s, NOW())"""
+            self.cursor.executemany(sql, following_list)
+            self.mysql.commit()
+            print(self.cursor.rowcount, "record(s) inserted.")
+            return 0, "Successfully inserted list of users you followed into Following Table."
+
+        except Exception as e:
+            print('Error inserting users into following table:\n', e, sep='')
+            return 1, 'Error inserting users into following table:\n' + str(e)
+
+
+    def get_users_older_than_x_days(self, uuid, number_of_days):
+        print("Fetching users you follow that don't follow you back, that you've been following for {} day(s)..".format(number_of_days))
+
+        try:
+            sql = """SELECT username FROM following WHERE user_id = %s
+            AND date_followed < NOW() - INTERVAL %s DAY"""
+
+            self.cursor.execute(sql, (uuid, number_of_days))
+            result = self.cursor.fetchall()
+
+            following_list = list(map(lambda n: n[0], result))
+            print("following_list: ", following_list) # delete
+
+            print("Successfully fetched list from MySQL database.")
+            return 0, following_list
+        except Exception as e:
+            print("Error at get_users_older_than_x_days:\n\n", e)
+            return 1, "Error at get_users_older_than_x_days."
+
+
+    def get_neverfollowers_list(self, followers_list, following_list):
+        print("Calculating users you followed that haven't followed you back (next we're going to unfollow them)..")
+        
+        """ for user in following_list, if user NOT in followers_list, add to neverfollowers list """
+
+        a = set(followers_list)
+        b = set(following_list)
+        neverfollowers = list(set(b).difference(a))
+        print("neverfollowers list: ", neverfollowers) # delete this
+        return neverfollowers
+        
+
+    def remove_unfollowed_neverfollowers_from_table(self, uuid, neverfollowers_list):
+        print("Deleting users you've unfollowed from MySQL database...")
+        
+        try:
+            format_strings = ','.join(["'%s'"] * len(neverfollowers_list))
+            sql = "DELETE FROM following WHERE user_id = %s and username IN (%s)" % (uuid, format_strings) % tuple(neverfollowers_list)
+            self.cursor.execute(sql)
+            self.mysql.commit()
+            print(self.cursor.rowcount, "record(s) deleted")
+            return 0, str(self.cursor.rowcount) + "record(s) deleted"
+        except Exception as e:
+            print("Error while deleting neverFollowers from MySQL Following table.. (NOT GOOD).")
+            return 1, "Error while deleting neverFollowers from MySQL Following table.. (NOT GOOD)."
+
+
     def get_user_followers_count(self):
         pass
         #will be useful inside the get_followers_list/get_following_list function
@@ -604,7 +939,7 @@ class instagram_bot:
         # E.g. follow people that appear when clicking that triangle that shows recommended users similar to that account.
 
 
-    def like_and_follow_on_hashtag(self):
+    def follow_on_hashtag(self):
         pass
         #some random number of likes and random number of follows on a certain hashtag to gain growth/engagement (random so that no bot like actions identified)
 
@@ -619,38 +954,9 @@ class instagram_bot:
         self.driver.quit()
 
 
-# # username = 'cole_mcconnell'
-# # username = 'BillionaireCole'
-# username = 'xylotheous'
-
 # bot = instagram_bot()
-# # bot.write_list_to_file(username, bot.get_following_list_v2(username), "following")
-# # bot.write_list_to_file(username, bot.get_followers_list_v2(username), "followers")
-# # bot.get_followers_list(username)
-# # bot.get_following_list(username)
-
-# # followers = bot.get_latest_followers_list_from_file(username)
-# # following = bot.get_latest_following_list_from_file(username)
-# # unfollowers = bot.get_unfollowers_list(followers, following)
-# # bot.write_list_to_file(username, unfollowers, "unfollowers")
-# # bot.unfollow_unfollowers(unfollowers, 10)
-
-# # unfollowers = bot.get_latest_unfollowers_list_from_file(username)
-# # bot.unfollow_unfollowers(unfollowers, 40)
-
-# # bot.get_followers_list_v2(username)
-# # bot.get_following_list_v2(username)
-
-# bot.close_driver()
-
-#-----------------------------
-# DO DO LIST:
-#-----------------------------
-
-"""
-
-- Merge all get_latest_followers/following/unfollowers_list_from_file functions into single function with new parameter to distinguish which to run
-
-- 
-
-"""
+# bot.connect_to_mysql()
+# # bot.fetch_id_from_username()
+# # bot.insert_into_following_table([(3, 'apurva_borhade_'), (3, 'indians_hackers2'), (3, 'sokelan.barqi')])
+# bot.remove_unfollowed_neverfollowers_from_table(3, ['hotel_locomoparis', 'hotelharveyparis', 'phileashotel'])
+# bot.get_latest_unfollowers_list_from_file('xylotheous')
