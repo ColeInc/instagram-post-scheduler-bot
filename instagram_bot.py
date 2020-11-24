@@ -23,32 +23,32 @@ class instagram_bot:
     # Windows:
     # ---------------------------
 
-    # def __init__(self):
-    #     self.username = ''
-    #     self.password = ''
-    #     self.mysql = ''
-    #     self.driver = ''
-    #     self.resources = 'D:/Cole/Auckland University/Instagram Post Scheduler Bot/Instagram Bot/'
-    #     print('-----------------------------------------------------------------------------')
-    #     print("Starting instagram_bot in Windows via geckodriver!")
-    #     print("Waiting for login from user...")
-    #     print('-----------------------------------------------------------------------------')
+    def __init__(self):
+        self.username = ''
+        self.password = ''
+        self.mysql = ''
+        self.driver = ''
+        self.resources = 'D:/Cole/Auckland University/Instagram Post Scheduler Bot/resources/'
+        print('-----------------------------------------------------------------------------')
+        print("Starting instagram_bot in Windows via geckodriver!")
+        print("Waiting for login from user...")
+        print('-----------------------------------------------------------------------------')
 
 
     # ---------------------------
     # Amazon Linux 2:
     # ---------------------------
     
-    def __init__(self):
-        self.username = ''
-        self.password = ''
-        self.mysql = ''
-        self.driver = ''
-        self.resources = '/home/ec2-user/docker/app/flask/resources/'
-        print('-----------------------------------------------------------------------------')
-        print("Starting instagram_bot in Amazon Linux 2 via headless firefox!")
-        print("Waiting for login from user...")
-        print('-----------------------------------------------------------------------------')
+    # def __init__(self):
+    #     self.username = ''
+    #     self.password = ''
+    #     self.mysql = ''
+    #     self.driver = ''
+    #     self.resources = '/home/ec2-user/docker/app/flask/resources/'
+    #     print('-----------------------------------------------------------------------------')
+    #     print("Starting instagram_bot in Amazon Linux 2 via headless firefox!")
+    #     print("Waiting for login from user...")
+    #     print('-----------------------------------------------------------------------------')
 
     # ---------------------------
 
