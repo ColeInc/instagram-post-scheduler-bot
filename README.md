@@ -17,9 +17,11 @@ An instagram bot created to complete numerous tasks automatically for me on Inst
 - s
 
 ### External python libraries necessary before running:
-* Selenium
-* Flask
-* Flask_restful
+* pip install selenium
+* pip install Flask
+* pip install uwsgi
+* pip install emojis
+* pip install mysql-connector
 * 
 
 ## API Calls and Parameters:

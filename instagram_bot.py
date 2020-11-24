@@ -14,6 +14,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver import Firefox, FirefoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 class instagram_bot:
@@ -22,66 +23,75 @@ class instagram_bot:
     # Windows:
     # ---------------------------
 
+    # def __init__(self):
+    #     self.username = ''
+    #     self.password = ''
+    #     self.mysql = ''
+    #     self.driver = ''
+    #     self.resources = 'D:/Cole/Auckland University/Instagram Post Scheduler Bot/Instagram Bot/'
+    #     print('-----------------------------------------------------------------------------')
+    #     print("Starting instagram_bot in Windows via geckodriver!")
+    #     print("Waiting for login from user...")
+    #     print('-----------------------------------------------------------------------------')
+
+
+    # ---------------------------
+    # Amazon Linux 2:
+    # ---------------------------
+    
     def __init__(self):
         self.username = ''
         self.password = ''
         self.mysql = ''
         self.driver = ''
-        # self.driver = webdriver.Chrome('C:/Windows/chromedriver') # Alter this to the location of your local chromedriver file
-        # print("Starting instagram_bot in Windows via chromedriver...")
-        # self.driver = webdriver.Firefox()
-        print("Starting instagram_bot in Windows via geckodriver...")
+        self.resources = '/home/ec2-user/docker/app/flask/resources/'
+        print('-----------------------------------------------------------------------------')
+        print("Starting instagram_bot in Amazon Linux 2 via headless firefox!")
         print("Waiting for login from user...")
+        print('-----------------------------------------------------------------------------')
 
     # ---------------------------
-    # Headless Ubuntu:
-    # ---------------------------
-    
-    # def __init__(self, username: str = None, password: str = None):
-        # self.username = ''
-        # self.password = ''
-        # self.mysql = ''
-        # # chrome_options = Options()
-        # # chrome_options.add_argument("--headless")
-        # # chrome_options.add_argument('--no-sandbox')
-        # # print("Starting instagram_bot in Ubuntu 20.04 via headless chrome...")
-        # # self.driver = webdriver.Chrome('/usr/bin/chromedriver', options=chrome_options)
-        
-        # ff_options = FirefoxOptions()
-        # ff_options.headless = True
-        # self.driver = webdriver.Firefox(executable_path='./geckodriver', options=ff_options)
-        # print("Starting instagram_bot in Ubuntu 20.04 via geckodriver...")
-        # # self.fetch_credentials()
-        # # self.login()
-        # print("Waiting for login from user...")
 
 
     def login(self):
         try:
             print("Logging in...")
-            self.driver = webdriver.Firefox()
+
+            # CURRENT EC2 PUBLIC URL:
+            # -------------------------- //
+            ec2_url = 'ec2-13-211-201-181.ap-southeast-2.compute.amazonaws.com'
+            # -------------------------- //
+
+            self.driver = webdriver.Remote(
+            command_executor=ec2_url + ':4444/wd/hub',
+            desired_capabilities=DesiredCapabilities.FIREFOX)
+
+            # for local testing:
+            # self.driver = webdriver.Firefox()
+
             sleep(2.47)
             self.driver.get('https://www.instagram.com/accounts/login')
-            sleep(self.rng())
+            sleep(self.rng()-1.5)
             self.driver.find_element_by_name('username').send_keys(self.username)
             self.driver.find_element_by_name('password').send_keys(self.password, Keys.RETURN)
             sleep(self.rng())
+            
             return self.check_suspicious_login_attempt()   
 
         except Exception as e:
+            print('Error logging in:\n', e, sep='')
             try:
-                print('Error logging in:\n', e, sep='')
                 self.driver.quit()
-                return 1, 'Error logging in:\n' + str(e)
             except:
-                print('Error logging in:\n', e, sep='')
+                print('Could not close Selenium Webdriver...')
+            finally:
                 return 1, 'Error logging in:\n' + str(e)
 
 
     def connect_to_mysql(self):
         print("Connecting to MySQL Database...")
 
-        with open('../mysql_credentials.json', 'r') as data:
+        with open(self.resources + 'mysql_credentials.json', 'r') as data:
             credentials = json.load(data)
         for i in credentials:
             host = i["host"]
@@ -514,8 +524,8 @@ class instagram_bot:
 
         print("Getting latest followers list from followers.json...")
         dates_list = []
-        if os.path.isfile('../followers.json'):
-            with open('../followers.json') as file:
+        if os.path.isfile(self.resources + 'followers.json'):
+            with open(self.resources + 'followers.json') as file:
                 data = json.load(file)
                 index = 0
                 exists = False
@@ -543,8 +553,8 @@ class instagram_bot:
     def get_latest_following_list_from_file(self, username):
         print("Getting latest following list from following.json...")
         dates_list = []
-        if os.path.isfile('../following.json'):
-            with open('../following.json') as file:
+        if os.path.isfile(self.resources + 'following.json'):
+            with open(self.resources + 'following.json') as file:
                 data = json.load(file)
                 index = 0
                 exists = False
@@ -572,8 +582,8 @@ class instagram_bot:
     def get_latest_unfollowers_list_from_file(self, username):
         print("Getting latest unfollowers list from unfollowers.json...")
         dates_list = []
-        if os.path.isfile('../unfollowers.json'):
-            with open('../unfollowers.json') as file:
+        if os.path.isfile(self.resources + 'unfollowers.json'):
+            with open(self.resources + 'unfollowers.json') as file:
                 data = json.load(file)
                 index = 0
                 exists = False
@@ -633,18 +643,17 @@ class instagram_bot:
 
 
     def write_list_to_file(self, username, list_data, filename):
-
+    
         now = datetime.datetime.now()
 
-        if os.path.isfile('../' + filename + '.json'):    #if the file exists, append. Otherwise create new file
+        if os.path.isfile(self.resources + filename + '.json'):    #if the file exists, append. Otherwise create new file
             append_dict = {
                 "username": username,
                 "date": now.strftime("%Y-%m-%d %H:%M:%S"),
                 "total": len(list_data),
                 filename: list_data
             }
-            with open('../' + filename + '.json') as file:
-
+            with open(self.resources + filename + '.json') as file:
                 data = json.load(file)
                 data[filename].append(append_dict)
             self.write_to_file(data, filename)
@@ -665,8 +674,49 @@ class instagram_bot:
         print("Successfully wrote list to file: {0}.json".format(filename))
 
 
+    def write_list_to_file_v2(self, username, list_data, filename):
+        
+        now = datetime.datetime.now()
+
+        if os.path.isfile(self.resources + filename + '.json'):    # check if file exists already, otherwise create new file
+            append_dict = {
+                "username": username,
+                "date": now.strftime("%Y-%m-%d %H:%M:%S"),
+                "total": len(list_data),
+                filename: list_data
+            }
+            with open(self.resources + filename + '.json') as file:
+                data = json.load(file)
+                index = 0
+                exists = False
+                for i in data['followers']:
+                    if i['username'] == username:
+                        data['followers'][index] = append_dict
+                        exists = True
+                    index += 1
+                
+                if not exists:
+                    data[filename].append(append_dict)
+            self.write_to_file(data, filename)
+
+        else:
+            new_dict = {
+                filename: [
+                    {
+                        "username": username,
+                        "date": now.strftime("%Y-%m-%d %H:%M:%S"),
+                        "total": len(list_data),
+                        filename: list_data
+                    }
+                ]
+            }
+            self.write_to_file(new_dict, filename)
+
+        print("Successfully wrote list to file: {0}.json".format(filename))
+
+
     def write_to_file(self, data, filename):
-        with open('../' + filename + '.json', 'w') as file:
+        with open(self.resources + filename + '.json', 'w') as file:
             json.dump(data, file, indent=4)
 
 
@@ -756,7 +806,7 @@ class instagram_bot:
 
     def fetch_random_hashtag(self):
         print("Fetching list of hashtags from file...")
-        with open('../hashtag_list.json', 'r') as data:
+        with open(self.resources + 'hashtag_list.json', 'r') as data:
             hashtag_list = json.load(data)
         index = random.randint(0,len(hashtag_list['hashtags'])-1)
         hashtag = hashtag_list['hashtags'][index]
@@ -766,7 +816,7 @@ class instagram_bot:
 
     def fetch_random_comment(self):
         print("Fetching list of comments from file...")
-        with open('../comment_list.json', 'r', encoding="utf8") as data:
+        with open(self.resources + 'comment_list.json', 'r', encoding="utf8") as data:
             comment_data = json.load(data)
         index = random.randint(0,len(comment_data['comments'])-1)
         comment = comment_data['comments'][index]
@@ -851,7 +901,7 @@ class instagram_bot:
             return 0, "Successfully followed " + str(number_of_users) + " users under the #" + hashtag + " hashtag!", new_following_list
 
         except Exception as e:
-            print(e, "\n--------------------------------------")
+            print("Error:\n", e, "\n--------------------------------------")
             if self.check_for_try_again_later_notice():
                 return 1, "Identified maximum like/follow actions restriction! Please wait a while before trying again."
             else:
@@ -951,12 +1001,5 @@ class instagram_bot:
 
 
     def close_driver(self):
+        print('Closed selenium webdriver!')
         self.driver.quit()
-
-
-# bot = instagram_bot()
-# bot.connect_to_mysql()
-# # bot.fetch_id_from_username()
-# # bot.insert_into_following_table([(3, 'apurva_borhade_'), (3, 'indians_hackers2'), (3, 'sokelan.barqi')])
-# bot.remove_unfollowed_neverfollowers_from_table(3, ['hotel_locomoparis', 'hotelharveyparis', 'phileashotel'])
-# bot.get_latest_unfollowers_list_from_file('xylotheous')
