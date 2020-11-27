@@ -1,5 +1,5 @@
-# instagram-post-scheduler-bot
-An instagram bot created to complete numerous tasks automatically for me on Instagram. Namely, automatically post scheduled media to Instagram at a specified time, and unfollow followers who don’t follow me back. Written in Python, utilizing the Selenium library.
+# Cole's Instagram Bot
+An instagram bot created to complete numerous tasks automatically for me on Instagram. Namely, automatically running processes to encourage page growth, and unfollow followers who don’t follow me back. Written in Python, utilizing the Selenium library.
 
 
 ## Specifications
@@ -17,7 +17,6 @@ An instagram bot created to complete numerous tasks automatically for me on Inst
 * pip install uwsgi
 * pip install emojis
 * pip install mysql-connector
-* 
 
 
 ## Authentication:
@@ -30,38 +29,42 @@ With every API call you pass, you'll need to send the corresponding instagram ac
 ##### Description:
 Given the user's account identifies a 'Suspicious Login Attempt', the user may provide the security code as a parameter here that has been sent to their personal email/phone, and the instagram bot can now use this to continue through this warning screen.
 ##### URL:
-- loginSecurityCode - 'http://127.0.0.1:5000/loginsecuritycode/<securitycode>'
-
+- loginSecurityCode - 'http://127.0.0.1:5000/loginsecuritycode/**securitycode**'
+##### Parameters:
+- securitycode: 871293
 
 ### getFollowers:
 ##### Description:
 Gets the specified user's list of followers.
 ##### URL:
-- getFollowers - 'http://127.0.0.1:5000/getfollowers/<user>'
-
+- getFollowers - 'http://127.0.0.1:5000/getfollowers/**user**'
+##### Parameters:
+- user: cole
 
 ### getFollowing:
 ##### Description:
 Gets the list of specified user's current following.
 ##### URL:
-- getFollowing - 'http://127.0.0.1:5000/getfollowing/<user>'
-
+- getFollowing - 'http://127.0.0.1:5000/getfollowing/**user**'
+##### Parameters:
+- user: cole
 
 ### getUnfollowers
 ##### Description:
 Fetches provided user's followers list, following list, then calculates all users this user is currently following that is not following them back.
 ##### URL:
-- getUnfollowers - 'http://127.0.0.1:5000/getunfollowers/<user>'
-
+- getUnfollowers - 'http://127.0.0.1:5000/getunfollowers/**user**'
+##### Parameters:
+- user: cole
 
 ### unfollowUnfollowers:
 ##### Description:
 1) Calculates unfollowers list
 2) Unfollows specified number of users to unfollow from this list, for the user provided
 ##### URL:
-- unfollowUnfollowers - 'http://127.0.0.1:5000/unfollowunfollowers/'
+- unfollowUnfollowers - 'http://127.0.0.1:5000/unfollowunfollowers/**user**?numbertounfollow=10'
 ##### Parameters:
-- username: cole_mcconnell
+- user: cole_mcconnell
 - number_to_unfollow: 10
 
 
