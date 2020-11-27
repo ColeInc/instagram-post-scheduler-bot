@@ -1001,5 +1001,8 @@ class instagram_bot:
 
 
     def close_driver(self):
-        print('Closed selenium webdriver!')
-        self.driver.quit()
+        try:
+            self.driver.quit()
+            print('Closed selenium webdriver!')
+        except:
+            print('Could not close Selenium Webdriver...')
